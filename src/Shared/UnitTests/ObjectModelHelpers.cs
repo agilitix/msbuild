@@ -1570,7 +1570,8 @@ namespace Microsoft.Build.UnitTests
         internal static ProjectGraph CreateProjectGraph(
             TestEnvironment env,
             IDictionary<int, int[]> dependencyEdges,
-            IDictionary<int, string> extraContentPerProjectNumber)
+            IDictionary<int, string> extraContentPerProjectNumber,
+            string extraContentForAllNodes = null)
         {
             return CreateProjectGraph(
                 env: env,
@@ -1578,14 +1579,19 @@ namespace Microsoft.Build.UnitTests
                 globalProperties: null,
                 createProjectFile: (environment, projectNumber, references, projectReferenceTargets, defaultTargets, extraContent) =>
                 {
-                    extraContentPerProjectNumber.ShouldContainKey(projectNumber);
+                    extraContent = extraContentPerProjectNumber != null && extraContentPerProjectNumber.TryGetValue(projectNumber, out var content)
+                        ? content
+                        : string.Empty;
+
+                    extraContent += extraContentForAllNodes ?? string.Empty;
+
                     return CreateProjectFile(
                         environment,
                         projectNumber,
                         references,
                         projectReferenceTargets,
                         defaultTargets,
-                        extraContentPerProjectNumber[projectNumber].Cleanup());
+                        extraContent.Cleanup());
                 });
         }
 
