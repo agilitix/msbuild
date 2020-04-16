@@ -44,7 +44,7 @@ namespace Microsoft.Build.Graph
         private readonly ProjectInterpretation _projectInterpretation;
 
         private readonly ProjectGraph.ProjectInstanceFactoryFunc _projectInstanceFactory;
-        private IReadOnlyDictionary<string, IReadOnlyCollection<string>> _solutionDependencies;
+        private readonly IReadOnlyDictionary<string, IReadOnlyCollection<string>> _solutionDependencies;
 
         public GraphBuilder(
             IEnumerable<ProjectGraphEntryPoint> entryPoints,
@@ -85,7 +85,7 @@ namespace Microsoft.Build.Graph
 
             EntryPointNodes = _entryPointConfigurationMetadata.Select(e => allParsedProjects[e].GraphNode).ToList();
 
-            DetectCycles(EntryPointNodes, _projectInterpretation, allParsedProjects);
+            DetectCycles(EntryPointNodes);
 
             RootNodes = GetGraphRoots(EntryPointNodes);
             ProjectNodes = allParsedProjects.Values.Select(p => p.GraphNode).ToList();
@@ -179,36 +179,6 @@ namespace Microsoft.Build.Graph
                     transitiveReferenceCache.Add(parsedProject.GraphNode, transitiveReferences);
 
                     return transitiveReferences;
-                }
-            }
-
-            void AddEdgesToNode(ProjectGraphNode node, ParsedProject parsedProject, bool isTransitive, bool isRecursiveCall = false)
-            {
-                foreach (var referenceInfo in parsedProject.ReferenceInfos)
-                {
-                    ErrorUtilities.VerifyThrow(
-                        allParsedProjects.ContainsKey(referenceInfo.ReferenceConfiguration),
-                        "all references should have been parsed");
-
-                    var referenceItem = isRecursiveCall
-                        ? new ProjectItemInstance(
-                            project: node.ProjectInstance,
-                            itemType: ProjectInterpretation.TransitiveReferenceItemName,
-                            includeEscaped: referenceInfo.ReferenceConfiguration.ProjectFullPath,
-                            directMetadata: null,
-                            definingFileEscaped: node.ProjectInstance.FullPath
-                        )
-                        : referenceInfo.ProjectReferenceItem;
-
-                    node.AddProjectReference(
-                        allParsedProjects[referenceInfo.ReferenceConfiguration].GraphNode,
-                        referenceItem,
-                        edges);
-
-                    if (isTransitive)
-                    {
-                        AddEdgesToNode(node, allParsedProjects[referenceInfo.ReferenceConfiguration], true, true);
-                    }
                 }
             }
         }
@@ -435,10 +405,8 @@ namespace Microsoft.Build.Graph
         ///     Assumes edges have been added between nodes.
         ///     Returns false if cycles were detected.
         /// </remarks>
-        private void DetectCycles(
-            IReadOnlyCollection<ProjectGraphNode> entryPointNodes,
-            ProjectInterpretation projectInterpretation,
-            Dictionary<ConfigurationMetadata, ParsedProject> allParsedProjects)
+        private static void DetectCycles(
+            IReadOnlyCollection<ProjectGraphNode> entryPointNodes)
         {
             var nodeStates = new Dictionary<ProjectGraphNode, NodeVisitationState>();
 
@@ -452,7 +420,7 @@ namespace Microsoft.Build.Graph
                 {
                     ErrorUtilities.VerifyThrow(
                         nodeStates[entryPointNode] == NodeVisitationState.Processed,
-                        "entrypoints should get processed after a call to detect cycles");
+                        "entry-points should get processed after a call to detect cycles");
                 }
             }
 
@@ -635,7 +603,7 @@ namespace Microsoft.Build.Graph
 
         internal class GraphEdges
         {
-            private ConcurrentDictionary<(ProjectGraphNode, ProjectGraphNode), ProjectItemInstance> ReferenceItems =
+            private readonly ConcurrentDictionary<(ProjectGraphNode, ProjectGraphNode), ProjectItemInstance> ReferenceItems =
                 new ConcurrentDictionary<(ProjectGraphNode, ProjectGraphNode), ProjectItemInstance>();
 
             internal int Count => ReferenceItems.Count;
@@ -682,7 +650,7 @@ namespace Microsoft.Build.Graph
 
     internal readonly struct ParsedProject
     {
-        public ConfigurationMetadata ConfigurationMetadata { get; }
+        private ConfigurationMetadata ConfigurationMetadata { get; }
         public ProjectGraphNode GraphNode { get; }
         public List<ProjectInterpretation.ReferenceInfo> ReferenceInfos { get; }
 

@@ -197,9 +197,9 @@ namespace Microsoft.Build.Graph.UnitTests
                 ProjectGraph graph = new ProjectGraph(entryProject.Path);
 
                 graph.ProjectNodes.Count.ShouldBe(3);
-                GetFirstNodeWithProjectNumber(graph, 1).ProjectReferences.Count.ShouldBe(2);
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.Count.ShouldBe(0);
-                GetFirstNodeWithProjectNumber(graph, 3).ProjectReferences.Count.ShouldBe(0);
+                graph.GetFirstNodeWithProjectNumber(1).ProjectReferences.Count.ShouldBe(2);
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.Count.ShouldBe(0);
+                graph.GetFirstNodeWithProjectNumber(3).ProjectReferences.Count.ShouldBe(0);
             }
         }
 
@@ -226,13 +226,13 @@ namespace Microsoft.Build.Graph.UnitTests
                 ProjectGraph graph = new ProjectGraph(entryProject.Path);
 
                 graph.ProjectNodes.Count.ShouldBe(7);
-                ProjectGraphNode node1 = GetFirstNodeWithProjectNumber(graph, 1);
-                ProjectGraphNode node2 = GetFirstNodeWithProjectNumber(graph, 2);
-                ProjectGraphNode node3 = GetFirstNodeWithProjectNumber(graph, 3);
-                ProjectGraphNode node4 = GetFirstNodeWithProjectNumber(graph, 4);
-                ProjectGraphNode node5 = GetFirstNodeWithProjectNumber(graph, 5);
-                ProjectGraphNode node6 = GetFirstNodeWithProjectNumber(graph, 6);
-                ProjectGraphNode node7 = GetFirstNodeWithProjectNumber(graph, 7);
+                ProjectGraphNode node1 = graph.GetFirstNodeWithProjectNumber(1);
+                ProjectGraphNode node2 = graph.GetFirstNodeWithProjectNumber(2);
+                ProjectGraphNode node3 = graph.GetFirstNodeWithProjectNumber(3);
+                ProjectGraphNode node4 = graph.GetFirstNodeWithProjectNumber(4);
+                ProjectGraphNode node5 = graph.GetFirstNodeWithProjectNumber(5);
+                ProjectGraphNode node6 = graph.GetFirstNodeWithProjectNumber(6);
+                ProjectGraphNode node7 = graph.GetFirstNodeWithProjectNumber(7);
 
                 node1.ProjectReferences.Count.ShouldBe(2);
                 node2.ProjectReferences.Count.ShouldBe(3);
@@ -333,19 +333,19 @@ namespace Microsoft.Build.Graph.UnitTests
                 projectCollection: collection,
                 projectInstanceFactory: null);
 
-            var root1 = GetFirstNodeWithProjectNumber(graph, 1);
+            var root1 = graph.GetFirstNodeWithProjectNumber(1);
             var globalPropertiesFor1 = new Dictionary<string, string> { ["B"] = "EntryPointB", ["C"] = "EntryPointC", ["IsGraphBuild"] = "true" };
 
             root1.ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor1);
-            root1.ProjectReferences.First(r => GetProjectNumber(r) == 3).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor1);
-            root1.ProjectReferences.First(r => GetProjectNumber(r) == 4).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor1);
+            root1.ProjectReferences.First(r => r.GetProjectNumber() == 3).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor1);
+            root1.ProjectReferences.First(r => r.GetProjectNumber() == 4).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor1);
 
-            var root2 = GetFirstNodeWithProjectNumber(graph, 2);
+            var root2 = graph.GetFirstNodeWithProjectNumber(2);
             var globalPropertiesFor2 = new Dictionary<string, string> { ["IsGraphBuild"] = "true" };
 
             root2.ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor2);
-            root2.ProjectReferences.First(r => GetProjectNumber(r) == 4).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor2);
-            root2.ProjectReferences.First(r => GetProjectNumber(r) == 5).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor2);
+            root2.ProjectReferences.First(r => r.GetProjectNumber() == 4).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor2);
+            root2.ProjectReferences.First(r => r.GetProjectNumber() == 5).ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(globalPropertiesFor2);
         }
 
         [Fact]
@@ -373,11 +373,11 @@ namespace Microsoft.Build.Graph.UnitTests
                 graph.ProjectNodes.Count.ShouldBe(5);
 
                 // Projects 2 and 3 both reference project 4, but with different properties, so they should not point to the same node.
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First().ShouldNotBe(GetFirstNodeWithProjectNumber(graph, 3).ProjectReferences.First());
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("4.proj");
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First().ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(EmptyGlobalProperties);
-                GetFirstNodeWithProjectNumber(graph, 3).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("4.proj");
-                GetFirstNodeWithProjectNumber(graph, 3).ProjectReferences.First().ProjectInstance.GlobalProperties.Count.ShouldBeGreaterThan(1);
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First().ShouldNotBe(graph.GetFirstNodeWithProjectNumber(3).ProjectReferences.First());
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("4.proj");
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First().ProjectInstance.GlobalProperties.ShouldBeSameIgnoringOrder(EmptyGlobalProperties);
+                graph.GetFirstNodeWithProjectNumber(3).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("4.proj");
+                graph.GetFirstNodeWithProjectNumber(3).ProjectReferences.First().ProjectInstance.GlobalProperties.Count.ShouldBeGreaterThan(1);
             }
         }
 
@@ -396,7 +396,7 @@ namespace Microsoft.Build.Graph.UnitTests
                 CreateProjectFile(env, 3);
                 ProjectGraph graph = new ProjectGraph(entryProject.Path);
                 graph.ProjectNodes.Count.ShouldBe(3);
-                GetFirstNodeWithProjectNumber(graph, 3).ProjectInstance.GlobalProperties["A"].ShouldBe("B");
+                graph.GetFirstNodeWithProjectNumber(3).ProjectInstance.GlobalProperties["A"].ShouldBe("B");
             }
         }
 
@@ -430,8 +430,8 @@ namespace Microsoft.Build.Graph.UnitTests
                 // Project 4 requires 2 nodes, but project 5 does not
                 graph.ProjectNodes.Count.ShouldBe(6);
 
-                var node4A = GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First();
-                var node4B = GetFirstNodeWithProjectNumber(graph, 3).ProjectReferences.First();
+                var node4A = graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First();
+                var node4B = graph.GetFirstNodeWithProjectNumber(3).ProjectReferences.First();
                 node4A.ShouldNotBe(node4B);
 
                 node4A.ProjectReferences.Count.ShouldBe(1);
@@ -467,7 +467,7 @@ namespace Microsoft.Build.Graph.UnitTests
                 graph.ProjectNodes.Count.ShouldBe(4);
 
                 // The project references end up using the same effective properties
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First().ShouldBe(GetFirstNodeWithProjectNumber(graph, 3).ProjectReferences.First());
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First().ShouldBe(graph.GetFirstNodeWithProjectNumber(3).ProjectReferences.First());
             }
         }
 
@@ -502,14 +502,14 @@ namespace Microsoft.Build.Graph.UnitTests
                 graph.ProjectNodes.Count.ShouldBe(6);
 
                 // Property names are case-insensitive, so projects 2 and 3 point to the same project 5 node.
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First().ShouldBe(GetFirstNodeWithProjectNumber(graph, 3).ProjectReferences.First());
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("5.proj");
-                GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First().ProjectInstance.GlobalProperties["FoO"].ShouldBe("bar");
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First().ShouldBe(graph.GetFirstNodeWithProjectNumber(3).ProjectReferences.First());
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("5.proj");
+                graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First().ProjectInstance.GlobalProperties["FoO"].ShouldBe("bar");
 
                 // Property values are case-sensitive, so project 4 points to a different project 5 node than proejcts 2 and 3
-                GetFirstNodeWithProjectNumber(graph, 4).ProjectReferences.First().ShouldNotBe(GetFirstNodeWithProjectNumber(graph, 2).ProjectReferences.First());
-                GetFirstNodeWithProjectNumber(graph, 4).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("5.proj");
-                GetFirstNodeWithProjectNumber(graph, 4).ProjectReferences.First().ProjectInstance.GlobalProperties["FoO"].ShouldBe("BAR");
+                graph.GetFirstNodeWithProjectNumber(4).ProjectReferences.First().ShouldNotBe(graph.GetFirstNodeWithProjectNumber(2).ProjectReferences.First());
+                graph.GetFirstNodeWithProjectNumber(4).ProjectReferences.First().ProjectInstance.FullPath.ShouldEndWith("5.proj");
+                graph.GetFirstNodeWithProjectNumber(4).ProjectReferences.First().ProjectInstance.GlobalProperties["FoO"].ShouldBe("BAR");
             }
         }
 
@@ -542,9 +542,9 @@ namespace Microsoft.Build.Graph.UnitTests
                 var projectGraph = new ProjectGraph(new [] { entryProject1.Path, entryProject2.Path });
                 projectGraph.ProjectNodes.Count.ShouldBe(3);
 
-                var node1 = GetFirstNodeWithProjectNumber(projectGraph, 1);
-                var node2 = GetFirstNodeWithProjectNumber(projectGraph, 2);
-                var node3 = GetFirstNodeWithProjectNumber(projectGraph, 3);
+                var node1 = projectGraph.GetFirstNodeWithProjectNumber(1);
+                var node2 = projectGraph.GetFirstNodeWithProjectNumber(2);
+                var node3 = projectGraph.GetFirstNodeWithProjectNumber(3);
                 node1.ProjectReferences.Count.ShouldBe(1);
                 node1.ProjectReferences.First().ShouldBe(node3);
                 node2.ProjectReferences.Count.ShouldBe(1);
@@ -637,7 +637,7 @@ namespace Microsoft.Build.Graph.UnitTests
                 var projectGraph = new ProjectGraph(new[] { entryProject1.Path, entryProject2.Path, entryProject3.Path });
                 projectGraph.EntryPointNodes.Count.ShouldBe(3);
                 projectGraph.GraphRoots.Count.ShouldBe(2);
-                projectGraph.GraphRoots.ShouldNotContain(GetFirstNodeWithProjectNumber(projectGraph, 2));
+                projectGraph.GraphRoots.ShouldNotContain(projectGraph.GetFirstNodeWithProjectNumber(2));
             }
         }
 
@@ -656,10 +656,10 @@ namespace Microsoft.Build.Graph.UnitTests
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new[] { "A" });
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "B" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 3)].ShouldBe(new[] { "B" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 4)].ShouldBe(new[] { "C", "D" }); // From B => C and B => D
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "B" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(3)].ShouldBe(new[] { "B" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(4)].ShouldBe(new[] { "C", "D" }); // From B => C and B => D
             }
         }
 
@@ -684,9 +684,9 @@ namespace Microsoft.Build.Graph.UnitTests
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new[] { "A" });
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "B", "X", "C" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 3)].ShouldBe(new[] { "X", "Y", "Z" }); // Simplified from X, Y, X, Z
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "B", "X", "C" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(3)].ShouldBe(new[] { "X", "Y", "Z" }); // Simplified from X, Y, X, Z
             }
         }
 
@@ -715,12 +715,12 @@ namespace Microsoft.Build.Graph.UnitTests
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new[] { "A" });
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "B" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 3)].ShouldBe(new[] { "B" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 4)].ShouldBe(new[] { "C" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 5)].ShouldBe(new[] { "B", "C", "D" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 6)].ShouldBe(new[] { "C", "D", "E" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "B" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(3)].ShouldBe(new[] { "B" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(4)].ShouldBe(new[] { "C" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(5)].ShouldBe(new[] { "B", "C", "D" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(6)].ShouldBe(new[] { "C", "D", "E" });
             }
         }
 
@@ -737,8 +737,8 @@ namespace Microsoft.Build.Graph.UnitTests
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(null);
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "B" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "B" });
             }
         }
 
@@ -758,9 +758,9 @@ namespace Microsoft.Build.Graph.UnitTests
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(null);
 
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "B" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 3)].ShouldBe(new[] { "C" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "B" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(3)].ShouldBe(new[] { "C" });
             }
         }
 
@@ -777,8 +777,8 @@ namespace Microsoft.Build.Graph.UnitTests
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new []{ "Foo" });
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new []{ "Foo" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBeEmpty();
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new []{ "Foo" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBeEmpty();
             }
         }
 
@@ -800,8 +800,8 @@ namespace Microsoft.Build.Graph.UnitTests
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(null);
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBeEmpty();
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBeEmpty();
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBeEmpty();
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBeEmpty();
             }
         }
 
@@ -823,8 +823,8 @@ namespace Microsoft.Build.Graph.UnitTests
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new []{ "A" });
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new []{ "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBeEmpty();
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new []{ "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBeEmpty();
             }
         }
 
@@ -867,8 +867,8 @@ namespace Microsoft.Build.Graph.UnitTests
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new List<string>{"A"});
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
 
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(NonOuterBuildTargets);
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(NonOuterBuildTargets);
             }
         }
 
@@ -908,8 +908,8 @@ namespace Microsoft.Build.Graph.UnitTests
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new List<string>{"A"});
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
 
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(NonOuterBuildTargets);
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(NonOuterBuildTargets);
             }
         }
 
@@ -942,10 +942,10 @@ namespace Microsoft.Build.Graph.UnitTests
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(new List<string>{"A"});
 
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                var root = GetFirstNodeWithProjectNumber(projectGraph, 1);
+                var root = projectGraph.GetFirstNodeWithProjectNumber(1);
 
-                var outerBuild = GetOuterBuild(projectGraph, 2);
-                var innerBuilds = GetInnerBuilds(projectGraph, 2).ToArray();
+                var outerBuild = projectGraph.GetOuterBuild(2);
+                var innerBuilds = projectGraph.GetInnerBuilds(2).ToArray();
 
                 targetLists[root].ShouldBe(new[] { "A" });
                 targetLists[outerBuild].ShouldBe(OuterBuildTargets);
@@ -1004,8 +1004,8 @@ $@"
 
             var dot = graph.ToDot();
 
-            var rootOuterBuild = GetOuterBuild(graph, 1);
-            var nonRootOuterBuild = GetOuterBuild(graph, 3);
+            var rootOuterBuild = graph.GetOuterBuild(1);
+            var nonRootOuterBuild = graph.GetOuterBuild(3);
 
             AssertOuterBuildAsRoot(rootOuterBuild, graph);
             AssertOuterBuildAsNonRoot(nonRootOuterBuild, graph);
@@ -1014,16 +1014,16 @@ $@"
 
             targetLists[rootOuterBuild].ShouldBe(new []{"A"});
 
-            foreach (var innerBuild in GetInnerBuilds(graph, 1))
+            foreach (var innerBuild in graph.GetInnerBuilds(1))
             {
                 targetLists[innerBuild].ShouldBe(new []{"D1", "A", "AOuter", "AInner"});
             }
 
-            targetLists[GetFirstNodeWithProjectNumber(graph, 2)].ShouldBe(new []{"T2", "A", "AOuter", "AInner"});
+            targetLists[graph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new []{"T2", "A", "AOuter", "AInner"});
 
             targetLists[nonRootOuterBuild].ShouldBe(new []{"T3", "A", "AOuter"});
 
-            foreach (var innerBuild in GetInnerBuilds(graph, 3))
+            foreach (var innerBuild in graph.GetInnerBuilds(3))
             {
                 targetLists[innerBuild].ShouldBe(new []{"T3", "A", "AOuter", "AInner"});
             }
@@ -1119,16 +1119,16 @@ $@"
                 AssertMultitargetingNode(3, projectGraph, targetLists, OuterBuildTargets, NonOuterBuildTargets);
                 AssertMultitargetingNode(6, projectGraph, targetLists, OuterBuildTargets, NonOuterBuildTargets);
 
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new []{"A"});
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 4)].ShouldBe(NonOuterBuildTargets);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 5)].ShouldBe(NonOuterBuildTargets);
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new []{"A"});
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(4)].ShouldBe(NonOuterBuildTargets);
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(5)].ShouldBe(NonOuterBuildTargets);
             }
 
             void AssertMultitargetingNode(int projectNumber, ProjectGraph projectGraph, IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists, string[] outerBuildTargets, string[] nonOuterBuildTargets)
             {
-                targetLists[GetOuterBuild(projectGraph, projectNumber)].ShouldBe(outerBuildTargets);
+                targetLists[projectGraph.GetOuterBuild(projectNumber)].ShouldBe(outerBuildTargets);
 
-                foreach (var innerBuild in GetInnerBuilds(projectGraph, projectNumber))
+                foreach (var innerBuild in projectGraph.GetInnerBuilds(projectNumber))
                 {
                     targetLists[innerBuild].ShouldBe(nonOuterBuildTargets);
                 }
@@ -1148,8 +1148,8 @@ $@"
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(null);
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "A" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "B" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "A" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "B" });
             }
         }
 
@@ -1171,8 +1171,8 @@ $@"
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(null);
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "Build" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "A", "Build" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "Build" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "A", "Build" });
             }
         }
 
@@ -1201,13 +1201,13 @@ $@"
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(null);
                 targetLists.Count.ShouldBe(projectGraph.ProjectNodes.Count);
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 1)].ShouldBe(new[] { "Build" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 2)].ShouldBe(new[] { "A", "Build" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 3)].ShouldBe(new[] { "A", "X" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 4)].ShouldBe(new[] { "A", "Y" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 5)].ShouldBe(new[] { "A", "Build" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 6)].ShouldBe(new[] { "B", "Build" });
-                targetLists[GetFirstNodeWithProjectNumber(projectGraph, 7)].ShouldBe(new[] { "C", "Z", "W" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(1)].ShouldBe(new[] { "Build" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(2)].ShouldBe(new[] { "A", "Build" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(3)].ShouldBe(new[] { "A", "X" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(4)].ShouldBe(new[] { "A", "Y" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(5)].ShouldBe(new[] { "A", "Build" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(6)].ShouldBe(new[] { "B", "Build" });
+                targetLists[projectGraph.GetFirstNodeWithProjectNumber(7)].ShouldBe(new[] { "C", "Z", "W" });
             }
         }
 
@@ -1258,11 +1258,11 @@ $@"
 
                 IReadOnlyDictionary<ProjectGraphNode, ImmutableList<string>> targetLists = projectGraph.GetTargetLists(entryProjectTargets: null);
                 targetLists.Count.ShouldBe(expected: projectGraph.ProjectNodes.Count);
-                targetLists[key: GetFirstNodeWithProjectNumber(graph: projectGraph, projectNum: 1)].ShouldBe(expected: new[] { "Build" });
-                targetLists[key: GetFirstNodeWithProjectNumber(graph: projectGraph, projectNum: 2)].ShouldBe(expected: new[] { "Build" });
-                targetLists[key: GetFirstNodeWithProjectNumber(graph: projectGraph, projectNum: 3)].ShouldBe(expected: new[] { "Build" });
-                targetLists[key: GetFirstNodeWithProjectNumber(graph: projectGraph, projectNum: 4)].ShouldBe(expected: new[] { "Build" });
-                targetLists[key: GetFirstNodeWithProjectNumber(graph: projectGraph, projectNum: 5)].ShouldBe(expected: new[] { "T51", "T2", "T53", "T54", "T3", "D51", "D52", "T4" });
+                targetLists[key: projectGraph.GetFirstNodeWithProjectNumber(projectNum: 1)].ShouldBe(expected: new[] { "Build" });
+                targetLists[key: projectGraph.GetFirstNodeWithProjectNumber(projectNum: 2)].ShouldBe(expected: new[] { "Build" });
+                targetLists[key: projectGraph.GetFirstNodeWithProjectNumber(projectNum: 3)].ShouldBe(expected: new[] { "Build" });
+                targetLists[key: projectGraph.GetFirstNodeWithProjectNumber(projectNum: 4)].ShouldBe(expected: new[] { "Build" });
+                targetLists[key: projectGraph.GetFirstNodeWithProjectNumber(projectNum: 5)].ShouldBe(expected: new[] { "T51", "T2", "T53", "T54", "T3", "D51", "D52", "T4" });
             }
         }
 
@@ -1453,7 +1453,7 @@ $@"
                 new Dictionary<string, string> {{"a", "b"}});
 
 
-            Func<ProjectGraphNode, string> nodeIdProvider = GetProjectFileName;
+            Func<ProjectGraphNode, string> nodeIdProvider = n => n.GetProjectFileName();
 
             var dot = graph.ToDot(nodeIdProvider);
 
@@ -1545,7 +1545,7 @@ $@"
 
             graph.ProjectNodes.Count.ShouldBe(4);
 
-            var outerBuild = GetOuterBuild(graph, 2);
+            var outerBuild = graph.GetOuterBuild(2);
 
             AssertOuterBuildAsNonRoot(outerBuild, graph);
         }
@@ -1579,15 +1579,15 @@ $@"
 
             graph.ProjectNodes.Count.ShouldBe(4);
 
-            var outerBuild = GetOuterBuild(graph, 2);
+            var outerBuild = graph.GetOuterBuild(2);
 
             AssertOuterBuildAsNonRoot(outerBuild, graph);
 
-            var outerBuildReferencingNode = GetFirstNodeWithProjectNumber(graph, 1);
+            var outerBuildReferencingNode = graph.GetFirstNodeWithProjectNumber(1);
 
-            var edgeToOuterBuild = graph.TestOnly_Edges[(outerBuildReferencingNode, GetOuterBuild(graph, 2))];
+            var edgeToOuterBuild = graph.TestOnly_Edges[(outerBuildReferencingNode, graph.GetOuterBuild(2))];
 
-            foreach (var innerBuild in GetInnerBuilds(graph, 2))
+            foreach (var innerBuild in graph.GetInnerBuilds(2))
             {
                 graph.TestOnly_Edges[(outerBuildReferencingNode, innerBuild)].ShouldBe(edgeToOuterBuild);
                 edgeToOuterBuild.GetMetadataValue("Foo").ShouldBe("Bar");
@@ -1612,8 +1612,8 @@ $@"
 
             graph.ProjectNodes.Count.ShouldBe(4);
 
-            var rootOuterBuild = GetOuterBuild(graph, 1);
-            var nonRootOuterBuild = GetOuterBuild(graph, 2);
+            var rootOuterBuild = graph.GetOuterBuild(1);
+            var nonRootOuterBuild = graph.GetOuterBuild(2);
 
             AssertOuterBuildAsRoot(rootOuterBuild, graph, null, 1);
             AssertOuterBuildAsNonRoot(nonRootOuterBuild, graph, null, 1);
@@ -1633,7 +1633,7 @@ $@"
 
             AssertOuterBuildAsRoot(graph.GraphRoots.First(), graph);
 
-            var nonMultitargetingNode = GetFirstNodeWithProjectNumber(graph, 2);
+            var nonMultitargetingNode = graph.GetFirstNodeWithProjectNumber(2);
 
             AssertNonMultitargetingNode(nonMultitargetingNode);
         }
@@ -1661,7 +1661,7 @@ $@"
 
             AssertInnerBuildEvaluation(graph.GraphRoots.First(), false, new Dictionary<string, string>());
 
-            var nonMultitargetingNode = GetFirstNodeWithProjectNumber(graph, 2);
+            var nonMultitargetingNode = graph.GetFirstNodeWithProjectNumber(2);
 
             AssertNonMultitargetingNode(nonMultitargetingNode);
         }
@@ -1680,7 +1680,7 @@ $@"
 
             AssertInnerBuildEvaluation(graph.GraphRoots.First(), true, new Dictionary<string, string>());
 
-            var nonMultitargetingNode = GetFirstNodeWithProjectNumber(graph, 2);
+            var nonMultitargetingNode = graph.GetFirstNodeWithProjectNumber(2);
 
             AssertNonMultitargetingNode(nonMultitargetingNode);
         }
@@ -1700,10 +1700,10 @@ $@"
             graph.ProjectNodes.Count.ShouldBe(8);
 
             AssertOuterBuildAsRoot(graph.GraphRoots.First(), graph);
-            AssertOuterBuildAsNonRoot(GetOuterBuild(graph, 4), graph);
+            AssertOuterBuildAsNonRoot(graph.GetOuterBuild(4), graph);
 
-            AssertNonMultitargetingNode(GetFirstNodeWithProjectNumber(graph, 2));
-            AssertNonMultitargetingNode(GetFirstNodeWithProjectNumber(graph, 3));
+            AssertNonMultitargetingNode(graph.GetFirstNodeWithProjectNumber(2));
+            AssertNonMultitargetingNode(graph.GetFirstNodeWithProjectNumber(3));
         }
 
         [Fact]
@@ -1727,19 +1727,19 @@ $@"
             graph.ProjectNodes.Count.ShouldBe(11);
 
             AssertOuterBuildAsRoot(graph.GraphRoots.First(), graph);
-            AssertOuterBuildAsNonRoot(GetOuterBuild(graph, 2), graph);
-            AssertOuterBuildAsNonRoot(GetOuterBuild(graph, 2), graph);
+            AssertOuterBuildAsNonRoot(graph.GetOuterBuild(2), graph);
+            AssertOuterBuildAsNonRoot(graph.GetOuterBuild(2), graph);
 
-            AssertNonMultitargetingNode(GetFirstNodeWithProjectNumber(graph, 3));
-            AssertNonMultitargetingNode(GetFirstNodeWithProjectNumber(graph, 5));
+            AssertNonMultitargetingNode(graph.GetFirstNodeWithProjectNumber(3));
+            AssertNonMultitargetingNode(graph.GetFirstNodeWithProjectNumber(5));
 
-            var innerBuildWithCommonReferences = GetNodesWithProjectNumber(graph, 1).First(n => n.ProjectInstance.GlobalProperties.TryGetValue(InnerBuildPropertyName, out string p) && p == "a");
+            var innerBuildWithCommonReferences = graph.GetNodesWithProjectNumber(1).First(n => n.ProjectInstance.GlobalProperties.TryGetValue(InnerBuildPropertyName, out string p) && p == "a");
 
             innerBuildWithCommonReferences.ProjectReferences.Count.ShouldBe(4);
             var referenceNumbersSet = innerBuildWithCommonReferences.ProjectReferences.Select(r => Path.GetFileNameWithoutExtension(r.ProjectInstance.FullPath)).ToHashSet();
             referenceNumbersSet.ShouldBeSameIgnoringOrder(new HashSet<string>{"2", "3"});
 
-            var innerBuildWithAdditionalReferences = GetNodesWithProjectNumber(graph, 1).First(n => n.ProjectInstance.GlobalProperties.TryGetValue(InnerBuildPropertyName, out string p) && p == "b");
+            var innerBuildWithAdditionalReferences = graph.GetNodesWithProjectNumber(1).First(n => n.ProjectInstance.GlobalProperties.TryGetValue(InnerBuildPropertyName, out string p) && p == "b");
 
             innerBuildWithAdditionalReferences.ProjectReferences.Count.ShouldBe(8);
             referenceNumbersSet = innerBuildWithAdditionalReferences.ProjectReferences.Select(r => Path.GetFileNameWithoutExtension(r.ProjectInstance.FullPath)).ToHashSet();
@@ -1766,14 +1766,14 @@ $@"
 
             graph.ProjectNodes.Count.ShouldBe(4);
 
-            var outerBuild = graph.GraphRoots.First(IsOuterBuild);
+            var outerBuild = graph.GraphRoots.First(r => r.IsOuterBuild());
 
             AssertOuterBuildAsRoot(outerBuild, graph, additionalGlobalProperties);
-            AssertNonMultitargetingNode(GetFirstNodeWithProjectNumber(graph, 2), additionalGlobalProperties);
+            AssertNonMultitargetingNode(graph.GetFirstNodeWithProjectNumber(2), additionalGlobalProperties);
 
-            var referencedInnerBuild = GetNodesWithProjectNumber(graph, 1).First(n => n.ProjectInstance.GetPropertyValue(InnerBuildPropertyName) == "a");
+            var referencedInnerBuild = graph.GetNodesWithProjectNumber(1).First(n => n.ProjectInstance.GetPropertyValue(InnerBuildPropertyName) == "a");
 
-            var two = GetFirstNodeWithProjectNumber(graph, 2);
+            var two = graph.GetFirstNodeWithProjectNumber(2);
 
             two.ProjectReferences.ShouldHaveSingleItem();
             two.ProjectReferences.First().ShouldBe(referencedInnerBuild);
@@ -1844,24 +1844,24 @@ $@"
 
             graph.ProjectNodes.Count.ShouldBe(5);
 
-            var outerBuild1 = GetOuterBuild(graph, 1);
+            var outerBuild1 = graph.GetOuterBuild(1);
 
             AssertOuterBuildAsRoot(outerBuild1, graph, additionalGlobalProperties);
 
-            var innerBuild1WithReferenceToInnerBuild2 = outerBuild1.ProjectReferences.FirstOrDefault(n => IsInnerBuild(n) && n.ProjectInstance.GlobalProperties[InnerBuildPropertyName] == "a");
+            var innerBuild1WithReferenceToInnerBuild2 = outerBuild1.ProjectReferences.FirstOrDefault(n => n.IsInnerBuild() && n.ProjectInstance.GlobalProperties[InnerBuildPropertyName] == "a");
             innerBuild1WithReferenceToInnerBuild2.ShouldNotBeNull();
 
-            var outerBuild2 = GetOuterBuild(graph, 2);
+            var outerBuild2 = graph.GetOuterBuild(2);
             outerBuild2.ShouldNotBeNull();
 
-            var innerBuild2 = GetInnerBuilds(graph, 2).FirstOrDefault();
+            var innerBuild2 = graph.GetInnerBuilds(2).FirstOrDefault();
             innerBuild2.ShouldNotBeNull();
 
             innerBuild2.ProjectInstance.GlobalProperties[InnerBuildPropertyName].ShouldBe("a");
 
             // project 2 has two nodes: the outer build and the referenced inner build
             // the outer build is necessary as the referencing inner build can still call targets on it
-            GetNodesWithProjectNumber(graph, 2).Count().ShouldBe(2);
+            graph.GetNodesWithProjectNumber(2).Count().ShouldBe(2);
 
             innerBuild1WithReferenceToInnerBuild2.ProjectReferences.ShouldBeSameIgnoringOrder(new []{outerBuild2, innerBuild2});
         }
@@ -1997,7 +1997,7 @@ $@"
 
             foreach (var node in graph.ProjectNodes)
             {
-                foreach (var closureReference in ComputeClosure(node))
+                foreach (var closureReference in node.ComputeClosure())
                 {
                     node.ProjectReferences.ShouldContain(closureReference);
                     closureReference.ReferencingProjects.ShouldContain(node);
@@ -2152,9 +2152,9 @@ $@"
                 }
             );
 
-            GetOuterBuild(graph, 1).AssertReferencesIgnoringOrder(new []{1, 1});
+            graph.GetOuterBuild(1).AssertReferencesIgnoringOrder(new []{1, 1});
 
-            var innerBuilds1 = GetInnerBuilds(graph, 1);
+            var innerBuilds1 = graph.GetInnerBuilds(1);
             innerBuilds1.Count.ShouldBe(2);
 
             foreach (var innerBuild in innerBuilds1)
@@ -2162,11 +2162,11 @@ $@"
                 innerBuild.AssertReferencesIgnoringOrder(new []{3, 4, 4, 4, 5, 6, 6, 6});
             }
 
-            GetFirstNodeWithProjectNumber(graph, 2).AssertReferencesIgnoringOrder(new []{3, 4, 4, 4, 5, 6, 6, 6});
+            graph.GetFirstNodeWithProjectNumber(2).AssertReferencesIgnoringOrder(new []{3, 4, 4, 4, 5, 6, 6, 6});
 
-            GetOuterBuild(graph, 4).AssertReferencesIgnoringOrder(new int[0]);
+            graph.GetOuterBuild(4).AssertReferencesIgnoringOrder(new int[0]);
 
-            var innerBuilds4 = GetInnerBuilds(graph, 4);
+            var innerBuilds4 = graph.GetInnerBuilds(4);
             innerBuilds4.Count.ShouldBe(2);
 
             foreach (var innerBuild in innerBuilds4)
@@ -2236,12 +2236,12 @@ $@"
 
             var targetLists = graph.GetTargetLists(new[] {"Build"});
 
-            var outerBuild1 = GetOuterBuild(graph, 1);
+            var outerBuild1 = graph.GetOuterBuild(1);
             targetLists[outerBuild1].ShouldBe(new[] {"Build"});
 
             AssertOuterBuildAsRoot(outerBuild1, graph, expectedInnerBuildCount: 2);
 
-            var innerBuildsFor1 = GetInnerBuilds(graph, 1);
+            var innerBuildsFor1 = graph.GetInnerBuilds(1);
             innerBuildsFor1.Count.ShouldBe(2);
 
             foreach (var inner1 in innerBuildsFor1)
@@ -2250,11 +2250,11 @@ $@"
                 targetLists[inner1].ShouldBe(new[] {"BuildForOuterBuild", "Build"});
             }
 
-            var outerBuild2 = GetOuterBuild(graph, 2);
+            var outerBuild2 = graph.GetOuterBuild(2);
             targetLists[outerBuild2].ShouldBe(new[] {"BuildForOuterBuild"});
             AssertOuterBuildAsNonRoot(outerBuild2, graph, expectedInnerBuildCount: 2);
 
-            var innerBuildsFor2 = GetInnerBuilds(graph, 2);
+            var innerBuildsFor2 = graph.GetInnerBuilds(2);
             innerBuildsFor2.Count.ShouldBe(2);
 
             foreach (var inner2 in innerBuildsFor2)
@@ -2262,13 +2262,13 @@ $@"
                 targetLists[inner2].ShouldBe(new[] {"BuildForOuterBuild", "Build", "1ATarget", "1BTarget"});
             }
 
-            var outerBuild3 = GetOuterBuild(graph, 3);
+            var outerBuild3 = graph.GetOuterBuild(3);
             targetLists[outerBuild3].ShouldBe(new[] { "BuildForOuterBuild" });
 
             outerBuild3.ReferencingProjects.Count.ShouldBe(4);
 
             AssertOuterBuildAsNonRoot(outerBuild3, graph, expectedInnerBuildCount: 2);
-            var innerBuildsFor3 = GetInnerBuilds(graph, 3);
+            var innerBuildsFor3 = graph.GetInnerBuilds(3);
             innerBuildsFor3.Count.ShouldBe(2);
 
             foreach (var inner3 in innerBuildsFor3)

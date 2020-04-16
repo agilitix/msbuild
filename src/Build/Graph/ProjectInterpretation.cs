@@ -25,22 +25,22 @@ namespace Microsoft.Build.Graph
         private const string GlobalPropertiesToRemoveMetadataName = "GlobalPropertiesToRemove";
         private const string ProjectReferenceTargetIsOuterBuildMetadataName = "OuterBuild";
         private const string InnerBuildReferenceItemName = "_ProjectSelfReference";
-        internal static string TransitiveReferenceItemName = "_TransitiveProjectReference";
+        internal const string TransitiveReferenceItemName = "_TransitiveProjectReference";
         internal const string AddTransitiveProjectReferencesInStaticGraphPropertyName = "AddTransitiveProjectReferencesInStaticGraph";
 
         private static readonly char[] PropertySeparator = MSBuildConstants.SemicolonChar;
 
-        public static ProjectInterpretation Instance = new ProjectInterpretation();
+        public static readonly ProjectInterpretation Instance = new ProjectInterpretation();
 
         private ProjectInterpretation()
         {
         }
 
-        private static readonly ImmutableList<GlobalPropertiesModifier> ModifierForNonMultitargetingNodes = new[] {(GlobalPropertiesModifier) ProjectReferenceGlobalPropertiesModifier}.ToImmutableList();
+        private static readonly ImmutableList<GlobalPropertiesModifier> ModifierForNonCrosstargetingNodes = new[] {(GlobalPropertiesModifier) ProjectReferenceGlobalPropertiesModifier}.ToImmutableList();
 
         internal enum ProjectType
         {
-            OuterBuild, InnerBuild, NonMultitargeting
+            OuterBuild, InnerBuild, NonCrosstargeting
         }
 
         internal readonly struct ReferenceInfo
@@ -66,11 +66,11 @@ namespace Microsoft.Build.Graph
                     projectReferenceItems = ConstructInnerBuildReferences(requesterInstance);
                     break;
                 case ProjectType.InnerBuild:
-                    globalPropertiesModifiers = ModifierForNonMultitargetingNodes.Add((parts, reference) => parts.AddPropertyToUndefine(GetInnerBuildPropertyName(requesterInstance)));
+                    globalPropertiesModifiers = ModifierForNonCrosstargetingNodes.Add((parts, reference) => parts.AddPropertyToUndefine(GetInnerBuildPropertyName(requesterInstance)));
                     projectReferenceItems = requesterInstance.GetItems(ItemTypeNames.ProjectReference);
                     break;
-                case ProjectType.NonMultitargeting:
-                    globalPropertiesModifiers = ModifierForNonMultitargetingNodes;
+                case ProjectType.NonCrosstargeting:
+                    globalPropertiesModifiers = ModifierForNonCrosstargetingNodes;
                     projectReferenceItems = requesterInstance.GetItems(ItemTypeNames.ProjectReference);
                     break;
                 default:
@@ -126,7 +126,7 @@ namespace Microsoft.Build.Graph
                 ? ProjectType.OuterBuild
                 : isInnerBuild
                     ? ProjectType.InnerBuild
-                    : ProjectType.NonMultitargeting;
+                    : ProjectType.NonCrosstargeting;
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace Microsoft.Build.Graph
         /// outer build. Change the graph to mimic this behaviour.
         /// Examples
         /// OuterAsRoot -> Inner go to OuterAsRoot -> Inner. Inner builds remain the same, parented to their outer build
-        /// Node -> Outer -> Inner go to: Node -> Outer; Node->Inner; Outer -> empty. Inner builds get reparented to Node
+        /// Node -> Outer -> Inner go to: Node -> Outer; Node->Inner; Outer -> empty. Inner builds get re-parented to Node
         /// </summary>
         public void ReparentInnerBuilds(Dictionary<ConfigurationMetadata, ParsedProject> allNodes, GraphBuilder graphBuilder)
         {
@@ -157,7 +157,7 @@ namespace Microsoft.Build.Graph
 
                             if (outerBuildReferencingProject.ProjectReferences.Contains(innerBuild))
                             {
-                                graphBuilder.Edges.TryGetEdge((outerBuildReferencingProject, innerBuild), out var existingEdge);
+                                graphBuilder.Edges.TryGetEdge((outerBuildReferencingProject, innerBuild), out _);
 
                                 ErrorUtilities.VerifyThrow(
                                     graphBuilder.Edges[(outerBuildReferencingProject, innerBuild)]
@@ -371,9 +371,9 @@ namespace Microsoft.Build.Graph
             {
                 _outerBuildTargets = outerBuildTargets;
 
-                // This is used as the list of entry targets for both inner builds and non-multitargeting projects.
+                // This is used as the list of entry targets for both inner builds and non-crosstargeting projects.
                 // It represents the concatenation of outer build targets and non outer build targets, in this order.
-                // Non-multitargeting projects use these targets because they act as both outer and inner builds.
+                // Non-crosstargeting projects use these targets because they act as both outer and inner builds.
                 _allTargets = outerBuildTargets.AddRange(nonOuterBuildTargets);
             }
 
@@ -429,7 +429,7 @@ namespace Microsoft.Build.Graph
                         return _allTargets;
                     case ProjectType.OuterBuild:
                         return _outerBuildTargets;
-                    case ProjectType.NonMultitargeting:
+                    case ProjectType.NonCrosstargeting:
                         return _allTargets;
                     default:
                         throw new ArgumentOutOfRangeException();

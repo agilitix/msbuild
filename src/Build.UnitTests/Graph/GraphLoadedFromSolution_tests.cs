@@ -214,12 +214,12 @@ namespace Microsoft.Build.Graph.UnitTests
             var graph = CreateProjectGraph(_env, edges);
 
             var projectSpecificConfigurations = graph.ProjectNodes.ToDictionary(
-                node => GetProjectNumber(node).ToString(),
+                node => node.GetProjectNumber().ToString(),
                 n => solutionConfigurations.ToDictionary(
                     sc => sc,
                     sc => new ProjectConfigurationInSolution(
-                        configurationName: $"{sc.ConfigurationName}_{GetProjectNumber(n)}",
-                        platformName: $"{sc.PlatformName}_{GetProjectNumber(n)}",
+                        configurationName: $"{sc.ConfigurationName}_{n.GetProjectNumber()}",
+                        platformName: $"{sc.PlatformName}_{n.GetProjectNumber()}",
                         includeInBuild: true)));
 
             AssertSolutionBasedGraph(edges, currentSolutionConfiguration, solutionConfigurations, projectSpecificConfigurations);
@@ -593,19 +593,19 @@ namespace Microsoft.Build.Graph.UnitTests
             var edges = graph.TestOnly_Edges.TestOnly_AsConfigurationMetadata();
             edges.Count.ShouldBe(8);
 
-            var node1 = GetFirstNodeWithProjectNumber(graph, 1);
+            var node1 = graph.GetFirstNodeWithProjectNumber(1);
             node1.ProjectReferences.Count.ShouldBe(3);
-            node1.ProjectReferences.Count(r => GetProjectNumber(r) == 2).ShouldBe(3);
+            node1.ProjectReferences.Count(r => r.GetProjectNumber() == 2).ShouldBe(3);
             GetOutgoingEdgeItemsFromNode(node1, edges).ShouldAllBe(edgeItem => !IsSolutionItemReference(edgeItem));
 
-            var outerBuild3 = GetOuterBuild(graph, 3);
+            var outerBuild3 = graph.GetOuterBuild(3);
             outerBuild3.ProjectReferences.Count.ShouldBe(3);
-            outerBuild3.ProjectReferences.Count(r => GetProjectNumber(r) == 3).ShouldBe(2);
-            outerBuild3.ProjectReferences.Count(r => GetProjectNumber(r) == 4).ShouldBe(1);
+            outerBuild3.ProjectReferences.Count(r => r.GetProjectNumber() == 3).ShouldBe(2);
+            outerBuild3.ProjectReferences.Count(r => r.GetProjectNumber() == 4).ShouldBe(1);
 
-            GetInnerBuilds(graph, 3).SelectMany(n => n.ProjectReferences).Count(r => GetProjectNumber(r) == 4).ShouldBe(2);
-            GetInnerBuilds(graph, 3).SelectMany(n => GetIncomingEdgeItemsToNode(n, edges)).ShouldAllBe(edgeItem => !IsSolutionItemReference(edgeItem));
-            GetInnerBuilds(graph, 3).SelectMany(n => GetOutgoingEdgeItemsFromNode(n, edges)).ShouldAllBe(edgeItem => !IsSolutionItemReference(edgeItem));
+            graph.GetInnerBuilds(3).SelectMany(n => n.ProjectReferences).Count(r => r.GetProjectNumber() == 4).ShouldBe(2);
+            graph.GetInnerBuilds(3).SelectMany(n => GetIncomingEdgeItemsToNode(n, edges)).ShouldAllBe(edgeItem => !IsSolutionItemReference(edgeItem));
+            graph.GetInnerBuilds(3).SelectMany(n => GetOutgoingEdgeItemsFromNode(n, edges)).ShouldAllBe(edgeItem => !IsSolutionItemReference(edgeItem));
 
             IEnumerable<ProjectItemInstance> GetOutgoingEdgeItemsFromNode(ProjectGraphNode node, IReadOnlyDictionary<(ConfigurationMetadata, ConfigurationMetadata), ProjectItemInstance> edgeInfos)
             {
@@ -649,7 +649,7 @@ namespace Microsoft.Build.Graph.UnitTests
 
         private static bool EdgeCompliesWithSolutionDependency((ConfigurationMetadata, ConfigurationMetadata) edge, (int, int) solutionDependency)
         {
-            return GetProjectNumber(edge.Item1) == solutionDependency.Item1 && GetProjectNumber(edge.Item2) == solutionDependency.Item2;
+            return edge.Item1.GetProjectNumber() == solutionDependency.Item1 && edge.Item2.GetProjectNumber() == solutionDependency.Item2;
         }
 
         private void AssertSolutionBasedGraph(
@@ -681,16 +681,16 @@ namespace Microsoft.Build.Graph.UnitTests
                 _env.CreateProjectCollection().Collection);
 
             // in the solution, all nodes are entry points
-            graphFromSolution.EntryPointNodes.Select(GetProjectPath)
-                .ShouldBeSetEquivalentTo(graph.ProjectNodes.Select(GetProjectPath));
+            graphFromSolution.EntryPointNodes.Select(n => n.GetProjectPath())
+                .ShouldBeSetEquivalentTo(graph.ProjectNodes.Select(n => n.GetProjectPath()));
 
             if (projectConfigurations == null || graphFromSolution.ProjectNodes.All(n => n.ProjectReferences.Count == 0))
             {
-                graphFromSolution.GraphRoots.Select(GetProjectPath)
-                    .ShouldBeSameIgnoringOrder(graph.GraphRoots.Select(GetProjectPath));
+                graphFromSolution.GraphRoots.Select(n => n.GetProjectPath())
+                    .ShouldBeSameIgnoringOrder(graph.GraphRoots.Select(n => n.GetProjectPath()));
 
-                graphFromSolution.ProjectNodes.Select(GetProjectPath)
-                    .ShouldBeSameIgnoringOrder(graph.ProjectNodes.Select(GetProjectPath));
+                graphFromSolution.ProjectNodes.Select(n => n.GetProjectPath())
+                    .ShouldBeSameIgnoringOrder(graph.ProjectNodes.Select(n => n.GetProjectPath()));
             }
 
             var expectedCurrentConfiguration = currentSolutionConfiguration ?? solutionConfigurations.First();
@@ -702,7 +702,7 @@ namespace Microsoft.Build.Graph.UnitTests
                 // produced by ProjectReference items (handled in the else block).
                 if (node.ReferencingProjects.Count == 0)
                 {
-                    var expectedProjectConfiguration = actualProjectConfigurations[GetProjectNumber(node).ToString()][expectedCurrentConfiguration];
+                    var expectedProjectConfiguration = actualProjectConfigurations[node.GetProjectNumber().ToString()][expectedCurrentConfiguration];
                     GetConfiguration(node).ShouldBe(expectedProjectConfiguration.ConfigurationName);
                     GetPlatform(node).ShouldBe(expectedProjectConfiguration.PlatformName);
                 }

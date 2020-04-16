@@ -93,7 +93,7 @@ namespace Microsoft.Build.Engine.UnitTests
             return new SolutionFileBuilder
             {
                 Projects = graph.ProjectNodes.ToDictionary(
-                    n => GraphTestingUtilities.GetProjectNumber((ProjectGraphNode) n).ToString(),
+                    n => ((ProjectGraphNode) n).GetProjectNumber().ToString(),
                     n => n.ProjectInstance.FullPath),
                 ProjectConfigurations = projectConfigurations,
                 SolutionDependencies = solutionDependencies,
